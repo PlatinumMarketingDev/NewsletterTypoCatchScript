@@ -1,0 +1,83 @@
+<script>
+(function () {
+  // Fixes for common misspelled endings
+  var TLD_FIX = {
+    con: 'com', cmo: 'com', ocm: 'com', vom: 'com',
+    xom: 'com', comm: 'com', cm: 'com', om: 'com',
+    cpm: 'com', nte: 'net', ent: 'net', ogr: 'org'
+  };
+
+  // Fixes for common misspelled email providers
+  var DOMAIN_FIX = {
+    'gmial.com': 'gmail.com',
+    'gmai.com': 'gmail.com',
+    'gamil.com': 'gmail.com',
+    'gnail.com': 'gmail.com',
+    'gmail.co': 'gmail.com',
+    'hotmial.com': 'hotmail.com',
+    'hotmal.com': 'hotmail.com',
+    'hotmail.co': 'hotmail.com',
+    'yaho.com': 'yahoo.com',
+    'yahooo.com': 'yahoo.com',
+    'yahoo.co': 'yahoo.com',
+    'outlok.com': 'outlook.com',
+    'outloo.com': 'outlook.com',
+    'outlook.co': 'outlook.com',
+    'icloud.co': 'icloud.com',
+    'iclod.com': 'icloud.com'
+  };
+
+  var EMAIL_RE = /^([^@\s]+)@([^@\s]+)$/;
+
+  function suggest(email) {
+    var clean = String(email).trim().toLowerCase();
+    var m = clean.match(EMAIL_RE);
+    if (!m) return null;
+
+    var user = m[1];
+    var domain = m[2];
+
+    var parts = domain.split('.');
+    var tld = parts.pop();
+    if (TLD_FIX[tld]) {
+      parts.push(TLD_FIX[tld]);
+      domain = parts.join('.');
+    }
+    if (DOMAIN_FIX[domain]) {
+      domain = DOMAIN_FIX[domain];
+    }
+
+    var fixed = user + '@' + domain;
+    return fixed !== clean ? fixed : null;
+  }
+
+  function check(input) {
+    var fix = suggest(input.value);
+    var msg = fix ? 'Did you mean ' + fix + '?' : '';
+    input.setCustomValidity(msg);
+    return !fix;
+  }
+
+  function isEmailField(el) {
+    return el && el.matches && el.matches('input[type="email"]');
+  }
+
+  // Clear the error as soon as they edit the field
+  document.addEventListener('input', function (e) {
+    if (isEmailField(e.target)) check(e.target);
+  });
+
+  // Capture phase: runs before Webflow's own submit handler
+  document.addEventListener('submit', function (e) {
+    var fields = e.target.querySelectorAll('input[type="email"]');
+    for (var i = 0; i < fields.length; i++) {
+      if (!check(fields[i])) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        fields[i].reportValidity();
+        return;
+      }
+    }
+  }, true);
+})();
+</script>
